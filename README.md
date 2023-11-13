@@ -10,7 +10,7 @@ O Sistema de Gestão de Alunos é uma aplicação Java desenvolvida como parte d
 
 ## Tecnologia Empregada
 
-### Escolha das Tecnologias (0.5 ponto)
+### Escolha das Tecnologias
 
 - **Linguagem de Programação: Java**
   - Justificativa: A escolha do Java se deve à sua ampla adoção, portabilidade e robustez, proporcionando uma base sólida para o desenvolvimento de aplicativos corporativos.
