@@ -41,5 +41,100 @@ A aplicação oferece as seguintes funcionalidades:
 
 A documentação do projeto inclui comentários no código, explicação de classes e métodos, além de instruções claras sobre como executar a aplicação.
 
+# **API Documentation**
+## **GET Todos Alunos:**
+**Método:** GET
+
+**URL:** http://localhost:8080/alunos
+
+**Resposta:**
+
+- **Status 200 OK:** Retorna uma lista de todos os alunos.
+
+\--- 
+## **GET Aluno por Matrícula:**
+**Método:** GET
+
+**URL:** http://localhost:8080/alunos/{matricula}
+
+**Parâmetros de Caminho:**
+
+- {matricula}: Matrícula do aluno a ser recuperado.
+
+**Respostas:**
+
+- **Status 200 OK:** Retorna os detalhes do aluno correspondente à matrícula fornecida.
+- **Status 404 Not Found:** Se não encontrar um aluno com a matrícula especificada.
+  - **Corpo da Resposta:**
+
+    { "message": "Aluno não encontrado com a matrícula: {matricula}" } --- 
+## **POST Adicionar Aluno:**
+**Método:** POST
+
+**URL:** http://localhost:8080/alunos
+
+**Corpo (Body):**
+
+{ "nome": "Nome do Aluno", "matricula": "202115951", "notaN1": 7.5, "notaN2": 8.0 } 
+
+**Respostas:**
+
+- **Status 201 Created:** Retorna os detalhes do aluno recém-criado.
+- **Status 400 Bad Request:** Se o corpo da solicitação estiver ausente ou malformado.
+  - **Corpo da Resposta:**
+
+    { "message": "Corpo da solicitação ausente ou malformado." } 
+
+- **Status 409 Conflict:** Se houver uma tentativa de criar um aluno com uma matrícula já existente.
+  - **Corpo da Resposta:**
+
+    { "message": "Matrícula duplicada. Verifique os dados e tente novamente." } --- 
+## **PUT Atualizar Aluno por Matrícula:**
+**Método:** PUT
+
+**URL:** http://localhost:8080/alunos/{matricula}
+
+**Parâmetros de Caminho:**
+
+- {matricula}: Matrícula do aluno a ser atualizado.
+
+**Corpo (Body):**
+
+{ "nome": "Novo Nome", "matricula": "Nova Matrícula", "notaN1": 7.5, "notaN2": 8.0 } 
+
+**Respostas:**
+
+- **Status 200 OK:** Retorna os detalhes do aluno atualizado.
+- **Status 400 Bad Request:** Se o corpo da solicitação estiver ausente ou malformado.
+  - **Corpo da Resposta:**
+
+    { "message": "Corpo da solicitação ausente ou malformado." } 
+
+- **Status 404 Not Found:** Se não encontrar um aluno com a matrícula especificada.
+  - **Corpo da Resposta:**
+
+    { "message": "Aluno não encontrado com a matrícula: {matricula}" } --- 
+## **PATCH Atualizar Parcialmente Aluno por Matrícula:**
+**Método:** PATCH
+
+**URL:** http://localhost:8080/alunos/{matricula}
+
+**Parâmetros de Caminho:**
+
+- {matricula}: Matrícula do aluno a ser atualizado parcialmente.
+
+**Corpo (Body):**
+
+{ "nome": "Novo Nome", "notaN1": 8.0 } 
+
+**Respostas:**
+
+- **Status 200 OK:** Retorna os detalhes do aluno atualizado.
+- **Status 400 Bad Request:** Se o corpo da solicitação estiver ausente ou malformado.
+  - **Corpo da Resposta:**
+
+    { "message": "Corpo da solicitação ausente ou malformado." } 
+
+- **Status 404 Not Found:** Se não encontrar um aluno 
 
 
