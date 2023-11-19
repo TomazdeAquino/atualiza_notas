@@ -1,12 +1,12 @@
 # Sistema de Gestão de Alunos
 
-## Descrição do Projeto
+## Descrição do Projet
 
 O Sistema de Gestão de Alunos é uma aplicação Java desenvolvida como parte do Laboratório 3 da disciplina de Programação Orientada a Objetos. O sistema oferece recursos para cadastrar, visualizar, atualizar e excluir informações de alunos, proporcionando uma maneira eficiente de gerenciar dados acadêmicos.
 
 ## Desenvolvedores
-- [Tomaz de Aquino Ribeiro Junior](https://github.com/dev1) - RA: 202107638
-- [Murilo Luciano dos Santos](https://github.com/dev2) - RA: 202107638 
+- Tomaz de Aquino Ribeiro Junior - RA: 202115951
+- Murilo Luciano dos Santos - RA: 202107638 
 
 ## Tecnologia Empregada
 
@@ -50,7 +50,6 @@ A documentação do projeto inclui comentários no código, explicação de clas
 **Resposta:**
 
 - **Status 200 OK:** Retorna uma lista de todos os alunos.
-
 \--- 
 ## **GET Aluno por Matrícula:**
 **Método:** GET
@@ -66,8 +65,8 @@ A documentação do projeto inclui comentários no código, explicação de clas
 - **Status 200 OK:** Retorna os detalhes do aluno correspondente à matrícula fornecida.
 - **Status 404 Not Found:** Se não encontrar um aluno com a matrícula especificada.
   - **Corpo da Resposta:**
-
-    { "message": "Aluno não encontrado com a matrícula: {matricula}" } --- 
+    { "message": "Aluno não encontrado com a matrícula: {matricula}" }
+    
 ## **POST Adicionar Aluno:**
 **Método:** POST
 
@@ -80,15 +79,15 @@ A documentação do projeto inclui comentários no código, explicação de clas
 **Respostas:**
 
 - **Status 201 Created:** Retorna os detalhes do aluno recém-criado.
-- **Status 400 Bad Request:** Se o corpo da solicitação estiver ausente ou malformado.
+- **Status 403 Bad Request:** Se houver algum campo mal formatado.
   - **Corpo da Resposta:**
+   - { "message": "Matrícula duplicada. Verifique os dados e tente novamente." }
+   - { "message": "A matrícula não pode ser nula ou vazia." } 
+   - { "message": "O nome não pode ser nulo ou vazio." } 
+   - { "message": "As notas não podem ser nulas." }
+   - { "message": "As notas devem ser números válidos." }
+   - { "message": "As notas devem ser números válidos." }
 
-    { "message": "Corpo da solicitação ausente ou malformado." } 
-
-- **Status 409 Conflict:** Se houver uma tentativa de criar um aluno com uma matrícula já existente.
-  - **Corpo da Resposta:**
-
-    { "message": "Matrícula duplicada. Verifique os dados e tente novamente." } --- 
 ## **PUT Atualizar Aluno por Matrícula:**
 **Método:** PUT
 
@@ -105,15 +104,17 @@ A documentação do projeto inclui comentários no código, explicação de clas
 **Respostas:**
 
 - **Status 200 OK:** Retorna os detalhes do aluno atualizado.
-- **Status 400 Bad Request:** Se o corpo da solicitação estiver ausente ou malformado.
-  - **Corpo da Resposta:**
-
-    { "message": "Corpo da solicitação ausente ou malformado." } 
-
 - **Status 404 Not Found:** Se não encontrar um aluno com a matrícula especificada.
+- **Status 403 Bad Request:** Se houver algum campo mal formatado.
   - **Corpo da Resposta:**
+   - { "message": "Aluno não encontrado com a matrícula" }
+   - { "message": "Matrícula duplicada. Verifique os dados e tente novamente." }
+   - { "message": "A matrícula não pode ser nula ou vazia." } 
+   - { "message": "O nome não pode ser nulo ou vazio." } 
+   - { "message": "As notas não podem ser nulas." }
+   - { "message": "As notas devem ser números válidos." }
+   - { "message": "As notas devem ser números válidos." }
 
-    { "message": "Aluno não encontrado com a matrícula: {matricula}" } --- 
 ## **PATCH Atualizar Parcialmente Aluno por Matrícula:**
 **Método:** PATCH
 
@@ -125,16 +126,38 @@ A documentação do projeto inclui comentários no código, explicação de clas
 
 **Corpo (Body):**
 
-{ "nome": "Novo Nome", "notaN1": 8.0 } 
+{ "nome": "Novo Nome", "matricula": "Nova Matrícula", "notaN1": 7.5, "notaN2": 8.0 } 
 
 **Respostas:**
 
 - **Status 200 OK:** Retorna os detalhes do aluno atualizado.
-- **Status 400 Bad Request:** Se o corpo da solicitação estiver ausente ou malformado.
+- **Status 404 Not Found:** Se não encontrar um aluno com a matrícula especificada.
+- **Status 403 Bad Request:** Se houver algum campo mal formatado.
   - **Corpo da Resposta:**
+   - { "message": "Aluno não encontrado com a matrícula" }
+   - { "message": "Matrícula duplicada. Verifique os dados e tente novamente." }
+   - { "message": "A matrícula não pode ser nula ou vazia." } 
+   - { "message": "O nome não pode ser nulo ou vazio." } 
+   - { "message": "As notas não podem ser nulas." }
+   - { "message": "As notas devem ser números válidos." }
+   - { "message": "As notas devem ser números válidos." }
 
-    { "message": "Corpo da solicitação ausente ou malformado." } 
+## **DELETE Excluir Aluno:** 
+**Método:** DELETE
 
-- **Status 404 Not Found:** Se não encontrar um aluno 
+**URL:** http://localhost:8080/alunos/{matricula}
 
+**Parâmetros de Caminho:**
 
+- {matricula}: Matrícula do aluno a ser atualizado parcialmente.
+
+**Respostas:**
+
+- **Status 200 Ok:** 
+- **Status 403 Bad Request:** Se houver algum campo mal formatado.
+  - **Corpo da Resposta:**
+  - { "message": "Aluno não encontrado com a matrícula" }
+-----
+**Diferencial: Mensagens de Erro Detalhadas**
+
+Uma característica diferencial deste projeto é a implementação de mensagens de erro detalhadas, proporcionando uma experiência de usuário mais informativa. As respostas de erro incluem mensagens claras que indicam a natureza do problema, facilitando a identificação e resolução de questões, seja durante o cadastro, atualização ou exclusão de alunos. Isso contribui para uma interação mais eficaz com a API, melhorando a usabilidade e a eficiência do sistema
