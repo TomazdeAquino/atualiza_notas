@@ -1,5 +1,7 @@
 package com.CadastroDeNotasEAlunoapi.crm.controller;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,127 +24,125 @@ public class AlunoController {
     private AlunoRepository alunoRepository;
 
     @GetMapping
-    public List<Aluno> listar() {
+    public ResponseEntity<?> listar() {
         List<Aluno> alunos = alunoRepository.findAll();
-
-        // Atualiza a média e situação para cada aluno
         alunos.forEach(this::atualizarMediaESituacao);
 
-        return alunos;
-    }
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("Cadastro", alunos.size() == 1 ? alunos.get(0) : alunos);
 
+        return ResponseEntity.ok().body(response);
+    }
+    
     @GetMapping("/{matricula}")
-    public ResponseEntity<Aluno> buscarPorMatricula(@PathVariable String matricula) {
+    public ResponseEntity<?> buscarPorMatricula(@PathVariable String matricula) {
         Optional<Aluno> alunoOptional = alunoRepository.findByMatricula(matricula);
         if (alunoOptional.isPresent()) {
             Aluno aluno = alunoOptional.get();
             atualizarMediaESituacao(aluno);
-            return ResponseEntity.ok().body(aluno);
+
+            Map<String, Aluno> response = Collections.singletonMap("Cadastro", aluno);
+
+            return ResponseEntity.ok().body(response);
         } else {
-            throw new Excecoes.AlunoNotFoundException(matricula);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Aluno não encontrado com a matrícula: " + matricula);
         }
     }
 
     @PostMapping
-    public ResponseEntity<Aluno> adicionar(@RequestBody Aluno aluno) {
-        try {
-            validarAluno(aluno);
+    public ResponseEntity<?> adicionar(@RequestBody Aluno aluno) {
+        ResponseEntity<?> validacao = validarAluno(aluno);
+        if (validacao != null) {
+            return validacao;
+        }
 
+        try {
             Aluno alunoSalvo = alunoRepository.save(aluno);
             atualizarMediaESituacao(alunoSalvo);
-            return ResponseEntity.status(HttpStatus.CREATED).body(alunoSalvo);
+
+            Map<String, Aluno> response = Collections.singletonMap("Cadastro", alunoSalvo);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (DataIntegrityViolationException e) {
-            throw new Excecoes.MatriculaDuplicadaException("Matrícula duplicada. Verifique os dados e tente novamente.");
-        } catch (Excecoes.PropriedadeNulaException | Excecoes.FormatoNotaInvalidoException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new Excecoes.PropriedadeNulaException("Erro ao processar a requisição.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Matrícula duplicada. Verifique os dados e tente novamente.");
         }
     }
 
     @PutMapping("/{matricula}")
-    public ResponseEntity<Aluno> atualizar(@PathVariable String matricula, @RequestBody Aluno alunoAtualizado) {
-        try {
-            validarAluno(alunoAtualizado);
+    public ResponseEntity<?> atualizar(@PathVariable String matricula, @RequestBody Aluno alunoAtualizado) {
+        ResponseEntity<?> validacao = validarAluno(alunoAtualizado);
+        if (validacao != null) {
+            return validacao;
+        }
 
-            Optional<Aluno> alunoOptional = alunoRepository.findByMatricula(matricula);
-            if (alunoOptional.isPresent()) {
-                Aluno aluno = alunoOptional.get();
-                atualizarDadosAluno(aluno, alunoAtualizado);
+        Optional<Aluno> alunoOptional = alunoRepository.findByMatricula(matricula);
+        if (alunoOptional.isPresent()) {
+            Aluno aluno = alunoOptional.get();
+            atualizarDadosAluno(aluno, alunoAtualizado);
+            atualizarMediaESituacao(aluno);
 
-                atualizarMediaESituacao(aluno);
+            Map<String, Aluno> response = Collections.singletonMap("Cadastro", alunoRepository.save(aluno));
 
-                return ResponseEntity.ok().body(alunoRepository.save(aluno));
-            } else {
-                throw new Excecoes.AlunoNotFoundException(matricula);
-            }
-        } catch (DataIntegrityViolationException e) {
-            throw new Excecoes.MatriculaDuplicadaException("Matrícula duplicada. Verifique os dados e tente novamente.");
-        } catch (Excecoes.PropriedadeNulaException | Excecoes.FormatoNotaInvalidoException | Excecoes.AlunoNotFoundException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new Excecoes.PropriedadeNulaException("Erro ao processar a requisição.");
+            return ResponseEntity.ok().body(response);
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Aluno não encontrado com a matrícula: " + matricula);
         }
     }
 
     @PatchMapping("/{matricula}")
-    public ResponseEntity<Aluno> atualizarParcial(@PathVariable String matricula, @RequestBody Map<String, Object> campos) {
+    public ResponseEntity<?> atualizarParcial(@PathVariable String matricula, @RequestBody Map<String, Object> campos) {
         Optional<Aluno> alunoOptional = alunoRepository.findByMatricula(matricula);
-        if (alunoOptional.isPresent()) {
-            Aluno aluno = alunoOptional.get();
-            atualizarCampos(aluno, campos);
-
+        return alunoOptional.map(aluno -> {
             try {
-                return ResponseEntity.ok().body(alunoRepository.save(aluno));
-            } catch (DataIntegrityViolationException e) {
-                throw new Excecoes.MatriculaDuplicadaException("Matrícula duplicada. Verifique os dados e tente novamente.");
+                validarNotas(aluno);
+                campos.forEach((campo, valor) -> atualizarCampo(aluno, campo, valor));
+                atualizarMediaESituacao(aluno);
+
+                Map<String, Aluno> response = Collections.singletonMap("Cadastro", alunoRepository.save(aluno));
+
+                return ResponseEntity.ok().body(response);
+            } catch (NumberFormatException | Excecoes.CampoDesconhecidoException | DataIntegrityViolationException e) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
             }
-        } else {
-            throw new Excecoes.AlunoNotFoundException(matricula);
-        }
+        }).orElse(ResponseEntity.status(HttpStatus.FORBIDDEN).body("Aluno não encontrado com a matrícula: " + matricula));
     }
 
     @DeleteMapping("/{matricula}")
-    public ResponseEntity<Void> excluir(@PathVariable String matricula) {
+    public ResponseEntity<?> excluir(@PathVariable String matricula) {
         Optional<Aluno> alunoOptional = alunoRepository.findByMatricula(matricula);
-        if (alunoOptional.isPresent()) {
-            alunoRepository.delete(alunoOptional.get());
+        return alunoOptional.map(aluno -> {
+            alunoRepository.delete(aluno);
             return ResponseEntity.noContent().build();
-        } else {
-            throw new Excecoes.AlunoNotFoundException(matricula);
-        }
+        }).orElse(ResponseEntity.status(HttpStatus.FORBIDDEN).body("Aluno não encontrado com a matrícula: " + matricula));
     }
 
- // Método privado para validar um aluno
-    private void validarAluno(Aluno aluno) {
+    private ResponseEntity<?> validarAluno(Aluno aluno) {
         if (aluno.getMatricula() == null || aluno.getMatricula().trim().isEmpty()) {
-            throw new Excecoes.PropriedadeNulaException("A matrícula não pode ser nula ou vazia.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("A matrícula não pode ser nula ou vazia.");
         }
 
         if (aluno.getNome() == null || aluno.getNome().trim().isEmpty()) {
-            throw new Excecoes.PropriedadeNulaException("O nome não pode ser nulo ou vazio.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("O nome não pode ser nulo ou vazio.");
         }
 
         if (aluno.getNotaN1() == null || aluno.getNotaN2() == null) {
-            throw new Excecoes.PropriedadeNulaException("As notas não podem ser nulas.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("As notas não podem ser nulas.");
         }
 
-     // Verifica se as notas são strings
         if (!(aluno.getNotaN1() instanceof Number) || !(aluno.getNotaN2() instanceof Number)) {
-            throw new Excecoes.FormatoNotaInvalidoException("As notas devem ser números válidos.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("As notas devem ser números válidos.");
         }
 
         try {
-            // Verifica se as notas são números válidos
             aluno.setNotaN1(parseNota(aluno.getNotaN1()));
             aluno.setNotaN2(parseNota(aluno.getNotaN2()));
         } catch (NumberFormatException e) {
-            throw new Excecoes.FormatoNotaInvalidoException("As notas devem ser números válidos.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("As notas devem ser números válidos.");
         }
+
+        return null;
     }
 
-
-    // Método privado para atualizar dados do aluno
     private void atualizarDadosAluno(Aluno aluno, Aluno alunoAtualizado) {
         aluno.setNome(alunoAtualizado.getNome());
         aluno.setMatricula(alunoAtualizado.getMatricula());
@@ -150,46 +150,55 @@ public class AlunoController {
         aluno.setNotaN2(alunoAtualizado.getNotaN2());
     }
 
-    // Método privado para atualizar campos parciais
-    private void atualizarCampos(Aluno aluno, Map<String, Object> campos) {
-        campos.forEach((campo, valor) -> {
-            // Convertendo a chave para camelCase manualmente
-            String[] parts = campo.split("_");
-            StringBuilder camelCase = new StringBuilder(parts[0]);
-            for (int i = 1; i < parts.length; i++) {
-                camelCase.append(Character.toUpperCase(parts[i].charAt(0))).append(parts[i].substring(1));
-            }
-
-            switch (camelCase.toString()) {
-                case "notaN1":
-                    aluno.setNotaN1(parseNota(valor));
-                    break;
-                case "notaN2":
-                    aluno.setNotaN2(parseNota(valor));
-                    break;
-                case "nome":
-                    aluno.setNome((String) valor);
-                    break;
-                case "matricula":
-                    aluno.setMatricula((String) valor);
-                    break;
-                default:
-                    throw new Excecoes.CampoDesconhecidoException("Campo desconhecido: " + campo);
-            }
-        });
+    private void validarNotas(Aluno aluno) {
+        aluno.setNotaN1(converterParaNumero(aluno.getNotaN1()));
+        aluno.setNotaN2(converterParaNumero(aluno.getNotaN2()));
     }
 
-    // Método privado para atualizar média e situação de um aluno
+    private void atualizarCampo(Aluno aluno, String campo, Object valor) {
+        String[] parts = campo.split("_");
+        StringBuilder camelCase = new StringBuilder(parts[0]);
+        switch (camelCase.toString()) {
+            case "notaN1":
+                aluno.setNotaN1(converterParaNumero(valor));
+                break;
+            case "notaN2":
+                aluno.setNotaN2(converterParaNumero(valor));
+                break;
+            case "nome":
+                aluno.setNome((String) valor);
+                break;
+            case "matricula":
+                aluno.setMatricula((String) valor);
+                break;
+            default:
+                throw new Excecoes.CampoDesconhecidoException("Campo desconhecido: " + campo);
+        }
+    }
+
     private void atualizarMediaESituacao(Aluno aluno) {
         ResultadoDTO resultado = aluno.calcularMediaEAtualizarStatus();
         aluno.setMedia(resultado.getMedia());
         aluno.setSituacao(resultado.getSituacao());
     }
 
-    // Método privado para converter a nota para Double
     private Double parseNota(Object valor) {
         if (valor instanceof Number) {
             return ((Number) valor).doubleValue();
+        } else {
+            throw new NumberFormatException("Valor não é um número válido.");
+        }
+    }
+
+    private Double converterParaNumero(Object valor) {
+        if (valor instanceof Number) {
+            return ((Number) valor).doubleValue();
+        } else if (valor instanceof String) {
+            try {
+                return Double.parseDouble((String) valor);
+            } catch (NumberFormatException e) {
+                throw new NumberFormatException("As notas devem ser números válidos.");
+            }
         } else {
             throw new NumberFormatException("Valor não é um número válido.");
         }
